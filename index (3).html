@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Book Library</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Poppins, sans-serif;
+            background: #f4f7ff;
+        }
+
+        header {
+            background: #002b5b;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        h2 {
+            margin-top: 40px;
+            color: #002b5b;
+        }
+
+        input, select, button {
+            padding: 10px;
+            margin: 8px 0;
+            width: 100%;
+            font-size: 15px;
+        }
+
+        button {
+            background: #1a73e8;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background: #1558b0;
+        }
+
+        .book-list {
+            margin-top: 20px;
+        }
+
+        .book {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .book span {
+            display: block;
+            font-size: 14px;
+        }
+
+        .history-item {
+            background: #fff;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 5px solid #1a73e8;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>📚 Personal Book Library</h1>
+</header>
+
+<div class="container">
+
+    <!-- Add Book Section -->
+    <h2>Add New Book</h2>
+    <input type="text" id="title" placeholder="Book Title">
+    <input type="text" id="author" placeholder="Author">
+    <select id="category">
+        <option value="">Select Category</option>
+        <option>Fiction</option>
+        <option>Non-Fiction</option>
+        <option>Study</option>
+        <option>Mystery</option>
+        <option>Fantasy</option>
+        <option>Biography</option>
+    </select>
+    <button onclick="addBook()">Add Book</button>
+
+    <!-- Search Books -->
+    <h2>Search Books</h2>
+    <input type="text" id="search" placeholder="Search by title or author" onkeyup="displayBooks()">
+
+    <!-- Filter by Category -->
+    <select id="filterCategory" onchange="displayBooks()">
+        <option value="">All Categories</option>
+        <option>Fiction</option>
+        <option>Non-Fiction</option>
+        <option>Study</option>
+        <option>Mystery</option>
+        <option>Fantasy</option>
+        <option>Biography</option>
+    </select>
+
+    <!-- Book List -->
+    <h2>Your Books</h2>
+    <div class="book-list" id="bookList"></div>
+
+    <!-- Borrow History -->
+    <h2>Borrowing History</h2>
+    <div id="history"></div>
+
+</div>
+
+<script>
+    let books = JSON.parse(localStorage.getItem("books")) || [];
+    let history = JSON.parse(localStorage.getItem("history")) || [];
+
+    // Add Book
+    function addBook() {
+        const title = document.getElementById("title").value.trim();
+        const author = document.getElementById("author").value.trim();
+        const category = document.getElementById("category").value;
+
+        if (!title || !author || !category) {
+            alert("Please fill all fields!");
+            return;
+        }
+
+        books.push({ title, author, category, borrowed: false });
+        localStorage.setItem("books", JSON.stringify(books));
+
+        document.getElementById("title").value = "";
+        document.getElementById("author").value = "";
+        document.getElementById("category").value = "";
+
+        displayBooks();
+    }
+
+    // Borrow Book
+    function borrowBook(index) {
+        books[index].borrowed = true;
+
+        history.push({
+            action: "Borrowed",
+            title: books[index].title,
+            time: new Date().toLocaleString()
+        });
+
+        localStorage.setItem("books", JSON.stringify(books));
+        localStorage.setItem("history", JSON.stringify(history));
+
+        displayBooks();
+        showHistory();
+    }
+
+    // Return Book
+    function returnBook(index) {
+        books[index].borrowed = false;
+
+        history.push({
+            action: "Returned",
+            title: books[index].title,
+            time: new Date().toLocaleString()
+        });
+
+        localStorage.setItem("books", JSON.stringify(books));
+        localStorage.setItem("history", JSON.stringify(history));
+
+        displayBooks();
+        showHistory();
+    }
+
+    // Display Books List
+    function displayBooks() {
+        const list = document.getElementById("bookList");
+        list.innerHTML = "";
+
+        const search = document.getElementById("search").value.toLowerCase();
+        const filter = document.getElementById("filterCategory").value;
+
+        books.forEach((book, index) => {
+            if (
+                (book.title.toLowerCase().includes(search) ||
+                book.author.toLowerCase().includes(search)) &&
+                (filter === "" || filter === book.category)
+            ) {
+                let div = document.createElement("div");
+                div.className = "book";
+
+                div.innerHTML = `
+                    <strong>${book.title}</strong>
+                    <span>Author: ${book.author}</span>
+                    <span>Category: ${book.category}</span>
+                    <span>Status: ${book.borrowed ? "Borrowed" : "Available"}</span>
+                    <button onclick="${book.borrowed ? `returnBook(${index})` : `borrowBook(${index})`}">
+                        ${book.borrowed ? "Return Book" : "Borrow Book"}
+                    </button>
+                `;
+                list.appendChild(div);
+            }
+        });
+    }
+
+    // Show Borrowing History
+    function showHistory() {
+        const historyDiv = document.getElementById("history");
+        historyDiv.innerHTML = "";
+
+        history.slice().reverse().forEach(item => {
+            let div = document.createElement("div");
+            div.className = "history-item";
+            div.innerHTML = `<strong>${item.action}:</strong> ${item.title} <br><small>${item.time}</small>`;
+            historyDiv.appendChild(div);
+        });
+    }
+
+    // Load on start
+    displayBooks();
+    showHistory();
+</script>
+
+</body>
+</html>
